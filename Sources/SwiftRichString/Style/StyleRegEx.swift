@@ -35,12 +35,21 @@ import AppKit
 import UIKit
 #endif
 
+public struct RegexMatchString {
+    public var text: String = ""
+    public var range: Range<String.Index> = .init(uncheckedBounds: ("".startIndex, "".endIndex))
+}
+
 /// StyleRegEx allows you to define a style which is applied when one or more regular expressions
 /// matches are found in source string or attributed string.
 public class StyleRegEx: StyleProtocol {
 	
 	//MARK: - PROPERTIES
 	
+    public var customAttributes: ((RegexMatchString) -> [NSAttributedString.Key : Any])? = nil
+    
+    public private(set) var matchStrings: [RegexMatchString] = []
+    
 	/// Regular expression
 	public private(set) var regex: NSRegularExpression
 	
@@ -116,18 +125,31 @@ public class StyleRegEx: StyleProtocol {
 	private func applyStyle(to str: AttributedString, add: Bool, range: NSRange?) -> AttributedString {
 		let rangeValue = (range ?? NSMakeRange(0, str.length))
 		
+        var matchStrings: [RegexMatchString] = []
+        
 		let matchOpts = NSRegularExpression.MatchingOptions(rawValue: 0)
 		self.regex.enumerateMatches(in: str.string, options: matchOpts, range: rangeValue) {
 			(result : NSTextCheckingResult?, _, _) in
-			if let r = result {
+			if let r = result, let range = str.string.rangeFrom(nsRange: r.range) {
+                let matchText = String(str.string[range])
+                let matchString = RegexMatchString.init(text: matchText, range: range)
+                matchStrings.append(matchString)
+                
+                var attributes = self.attributes
+                if let custom = self.customAttributes?(matchString) {
+                    attributes.merge(custom) { (_, new) in return new }
+                }
+
 				if add {
-					str.addAttributes(self.attributes, range: r.range)
+					str.addAttributes(attributes, range: r.range)
 				} else {
-					str.setAttributes(self.attributes, range: r.range)
+					str.setAttributes(attributes, range: r.range)
 				}
 			}
 		}
 		
+        self.matchStrings = matchStrings
+        
 		return str
 	}
 	
