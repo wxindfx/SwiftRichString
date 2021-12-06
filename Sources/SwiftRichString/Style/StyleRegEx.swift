@@ -37,7 +37,7 @@ import UIKit
 
 public struct RegexMatchString {
     public var text: String = ""
-    public var range: Range<String.Index> = .init(uncheckedBounds: ("".startIndex, "".endIndex))
+    public var range: NSRange = .init(location: 0, length: 0)
 }
 
 /// StyleRegEx allows you to define a style which is applied when one or more regular expressions
@@ -132,7 +132,7 @@ public class StyleRegEx: StyleProtocol {
 			(result : NSTextCheckingResult?, _, _) in
 			if let r = result, let range = str.string.rangeFrom(nsRange: r.range) {
                 let matchText = String(str.string[range])
-                let matchString = RegexMatchString.init(text: matchText, range: range)
+                let matchString = RegexMatchString.init(text: matchText, range: r.range)
                 matchStrings.append(matchString)
                 
                 var attributes = self.attributes
