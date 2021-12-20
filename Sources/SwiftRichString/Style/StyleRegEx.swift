@@ -46,7 +46,9 @@ public class StyleRegEx: StyleProtocol {
 	
 	//MARK: - PROPERTIES
 	
-    public var customAttributes: ((RegexMatchString) -> [NSAttributedString.Key : Any])? = nil
+    public var filterMatchStringsAction: (([RegexMatchString]) -> [RegexMatchString])?
+    
+    public var addCustomAttributesAction: ((RegexMatchString) -> [NSAttributedString.Key : Any])? = nil
     
     public private(set) var matchStrings: [RegexMatchString] = []
     
@@ -134,21 +136,25 @@ public class StyleRegEx: StyleProtocol {
                 let matchText = String(str.string[range])
                 let matchString = RegexMatchString.init(text: matchText, range: r.range)
                 matchStrings.append(matchString)
-                
-                var attributes = self.attributes
-                if let custom = self.customAttributes?(matchString) {
-                    attributes.merge(custom) { (_, new) in return new }
-                }
-
-				if add {
-					str.addAttributes(attributes, range: r.range)
-				} else {
-					str.setAttributes(attributes, range: r.range)
-				}
 			}
 		}
 		
-        self.matchStrings = matchStrings
+        let filteredMatchStrings: [RegexMatchString] = self.filterMatchStringsAction?(matchStrings) ?? matchStrings
+        
+        filteredMatchStrings.forEach { matchString in
+            var attributes = self.attributes
+            if let custom = self.addCustomAttributesAction?(matchString) {
+                attributes.merge(custom) { (_, new) in return new }
+            }
+
+            if add {
+                str.addAttributes(attributes, range: matchString.range)
+            } else {
+                str.setAttributes(attributes, range: matchString.range)
+            }
+        }
+        
+        self.matchStrings = filteredMatchStrings
         
 		return str
 	}
