@@ -38,7 +38,13 @@ import UIKit
 public struct RegexMatchString {
     public var text: String = ""
     public var range: NSRange = .init(location: 0, length: 0)
+    
     public init() {}
+    
+    public init(text: String, range: NSRange) {
+        self.text = text
+        self.range = range
+    }
 }
 
 /// StyleRegEx allows you to define a style which is applied when one or more regular expressions
